@@ -1,0 +1,13 @@
+app = "AutoScience"
+version = "0.1"
+
+[configuration]
+    type = "log"
+    id   = "ID-LOG-0001"
+
+[version-control]
+    user_admin   = "fujimoto"
+    user_updated = "fujimoto"
+
+
+
