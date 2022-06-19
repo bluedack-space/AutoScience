@@ -5,7 +5,6 @@ from github import Github
 token      = '[Setting]>[Developer Setting]'
 repository = 'bluedack-space/AutoScience'
 dirName    = '/Image'
-fileName   = 'C5587634-532B-405C-8BA5-7C955357571C.jpeg'
 
 g            = Github(token)
 repo         = g.get_repo(repository)
