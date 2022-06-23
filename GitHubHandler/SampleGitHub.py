@@ -5,7 +5,7 @@ from github import Github
 class GitHubHandler():
 
     github = None
-    
+
     def __init__(self,token):
         self.Github(token)
 
@@ -35,6 +35,7 @@ class GitHubHandler():
     def downloadAll(self,dirContents,fileNameList):
 
         for n in range(len(fileNameList)):
+
             fileName = fileNameList[n]
 
             sha = 0
@@ -53,8 +54,8 @@ repository = 'bluedack-space/AutoScience'
 dirName    = '/Image'
 extList    = ['.jpeg','.jpg']
 
-gitHdl            = GitHubHandler( token )
-repo              = gitHdl.getRepository( repository )
-dirContents       = gitHdl.getDirectoryContents( repo, dirName )
-fileNameList      = gitHdl.getFileNameList( dirContents, extList )
-gitHdl.downloadAll( dirContents, fileNameList )
+gitHdl            = GitHubHandler ( token )
+repo              = gitHdl.getRepository ( repository )
+dirContents       = gitHdl.getDirectoryContents ( repo, dirName )
+fileNameList      = gitHdl.getFileNameList ( dirContents, extList )
+gitHdl.downloadAll ( dirContents, fileNameList )
