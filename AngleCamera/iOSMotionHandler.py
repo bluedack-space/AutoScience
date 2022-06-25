@@ -1,4 +1,5 @@
 import motion
+import numpy as np
 
 class iOSMotionHandler():
 		
@@ -17,11 +18,14 @@ class iOSMotionHandler():
 		return motion.get_gravity()
 	
 	@staticmethod
-	def getAttitude():
+	def getAttitude(inDegrees=False):
 		gravity_vectors  = motion.get_attitude()
 		pitch, roll, yaw = [x for x in gravity_vectors]
-		return pitch, roll, yaw
-		
+		if inDegrees==True:
+			return np.degrees(pitch), np.degrees(roll), np.degrees(yaw)
+		else:
+			return pitch, roll, yaw
+
 	@staticmethod
 	def getMagneticField():
 		return motion.get_magnetic_field()
