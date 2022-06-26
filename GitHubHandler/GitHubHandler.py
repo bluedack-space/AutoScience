@@ -2,6 +2,14 @@ import base64
 import os
 from github import Github
 
+import traceback
+
+from enum import Enum
+
+class FileType(Enum):
+    BINARY = 1
+    ASCII  = 2
+
 class GitHubHandler():
 
     github = None
@@ -34,8 +42,9 @@ class GitHubHandler():
 
     def downloadAll(self,dirContents,fileNameList,fileNameListLocal):
         
-        numberOfDownload = 0
-
+        
+        fileNameListDL = []
+        
         for n in range(len(fileNameList)):
             fileName = fileNameList[n]
             
@@ -51,12 +60,13 @@ class GitHubHandler():
 
                 with open(fileName, mode="wb") as f:
                     f.write(content)
-                numberOfDownload = numberOfDownload + 1
                 
-        if numberOfDownload>0:
-            return True
+                fileNameListDL.append(fileName)
+                                
+        if len(fileNameListDL)>0:
+            return True, fileNameListDL
         else:
-            return False
+            return False, None
         
     @staticmethod
     def getFileNameListLocal(extList):
@@ -66,36 +76,62 @@ class GitHubHandler():
             files = glob.glob("./*"+extList[i])
             for ii in range(len(files)):
                 fileNameListLocal.append(os.path.basename(files[ii]))
-        return ffileNameListLocal
+        return fileNameListLocal
+
+    @staticmethod
+    def getFileType(fileName=None):
+        root, ext = os.path.splitext(fileName)
+        if ext==".jpeg" or ext==".jpg" or ext==".bmp" or ext==".png":
+            return FileType.BINARY
+        elif ext==".stl":
+            return FileType.BINARY
+        else:
+            return FileType.ASCII
         
     @staticmethod
     def uploadFile(repo,fileNameList=None,dirPath=None,branch="main"):
-        all_files = []
-        contents  = repo.get_contents("")
-        while contents:
-            file_content = contents.pop(0)
-            if file_content.type == "dir":
-                contents.extend(repo.get_contents(file_content.path))
-            else:
-                file = file_content
-                all_files.append(str(file).replace('ContentFile(path="','').replace('")',''))
-    
-        for i in range(len(fileNameList)):
-            fileName = fileNameList[i]
         
-            with open(fileName, 'r') as file:
-                content = file.read()
+        try:
+            all_files = []
+            contents  = repo.get_contents("")
+            while contents:
+                file_content = contents.pop(0)
+                if file_content.type == "dir":
+                    contents.extend(repo.get_contents(file_content.path))
+                else:
+                    file = file_content
+                    all_files.append(str(file).replace('ContentFile(path="','').replace('")',''))
+    
+            for i in range(len(fileNameList)):
+                fileName = fileNameList[i]
+                
+                print("UL:"+str(fileName))
+                                
+                if GitHubHandler.getFileType(fileName=fileName)==FileType.BINARY:
+                    fopenType = 'rb'               
+                else:
+                    fopenType = 'r'               
+                    
+                with open(fileName, fopenType) as file:
+                    content = file.read()
 
-            git_prefix = dirPath
-            git_file   = git_prefix + fileName
+                git_prefix = dirPath
+                git_file   = git_prefix + fileName
 
-            if git_file in all_files:
-                contents = repo.get_contents(git_file)
-                repo.update_file(contents.path, "committing files", content, contents.sha, branch="main")
-                print(git_file + ' UPDATED')
-            else:
-                repo.create_file(git_file, "committing files", content, branch="main")
-                print(git_file + ' CREATED')
+                if git_file in all_files:
+                    contents = repo.get_contents(git_file)
+                    repo.update_file(contents.path, "committing files", content, contents.sha, branch="main")
+                    print(git_file + ' UPDATED')
+                else:
+                    repo.create_file(git_file, "committing files", content, branch="main")
+                    print(git_file + ' CREATED')
+                    
+        except:
+            print("Error")
+            print(traceback.format_exc())
+        
+
+import cv2
 
 #------------------------------------------------------------------------------------------------
 token         = '[token]'
@@ -106,17 +142,33 @@ extList       = ['.jpeg','.jpg']
 gitHdl        = GitHubHandler ( token )
 repo          = gitHdl.getRepository ( repository )
 
-#[Upload files]
-GitHubHandler.uploadFile(repo,fileNameList=["file1.txt","file2.txt"],dirPath="./Image/",branch="main")
-
 #[Download files]
 import time
 while True:
     dirContents       = gitHdl.getDirectoryContents ( repo, dirName )
     fileNameList      = gitHdl.getFileNameList ( dirContents, extList )
     fileNameListLocal = gitHdl.getFileNameListLocal(extList)
-    flagDownLoaded    = gitHdl.downloadAll ( dirContents, fileNameList, fileNameListLocal )
+    flagDownLoaded, fileNameListDL    = gitHdl.downloadAll ( dirContents, fileNameList, fileNameListLocal )
     
+    if fileNameListDL!=None:
+        fileNameListUL = []
+        for ii in range(len(fileNameListDL)):
+            fileName = fileNameListDL[ii]
+            
+            img         = cv2.imread(fileName)
+            img_gray    = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+            
+            root, ext = os.path.splitext(fileName)
+            fileNameOut = root+"-asd"+ext
+            
+            cv2.imwrite(fileNameOut, img_gray)
+            
+            fileNameListUL.append(fileNameOut) 
+
+        #[Upload files]
+        print("!!!!"+str(fileNameListUL))
+        GitHubHandler.uploadFile(repo,fileNameList=fileNameListUL,dirPath="./Image/",branch="main")
+
     if flagDownLoaded:
         print("New Downloaded file is found !!!!")
     
